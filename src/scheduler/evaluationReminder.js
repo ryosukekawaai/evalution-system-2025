@@ -115,7 +115,7 @@ const job = new CronJob(
             const mentionMulti = await generateMentions(missingMulti);
 
             // 通知識別キーを評価期 + 日付 + 種別にする
-        const baseKey = `${todayStr}_${targetPeriod}`;
+            const baseKey = `${todayStr}_${targetPeriod}`;
 
             // 未提出者がいたらリマインドを実行
             // 自己評価の通知
