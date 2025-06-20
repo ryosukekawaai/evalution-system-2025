@@ -7,6 +7,8 @@ const {
     fetchMultiEvaluations
 } = require('../services/kintoneService');
 
+const sentNotifications = new Set();
+
 // 通知
 const job = new CronJob(
     '0 * * * * *',
@@ -17,8 +19,7 @@ const job = new CronJob(
         const nowHour = jst.getHours();
         const nowMinute = jst.getMinutes();
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const todayStr = jst.toISOString().split('T')[0];
 
         // 評価期データを取得
         const periods = await fetchEvaluationPeriods();
@@ -31,33 +32,34 @@ const job = new CronJob(
             const notifDaysStr = p.notification_days_before?.value;
             if (!notifTime || !deadlineStr || !targetPeriod || !notifDaysStr) continue;
 
-            const notifDays = parseInt(notifDaysStr, 10)
-            // hh:mm形式に変換
-            const [hourStr, minuteStr] = notifTime.split(':');
-            const notifHour = parseInt(hourStr, 10);
-            const notifMinute = parseInt(minuteStr, 10);
-
+            const [notifHour, notifMinute] = notifTime.split(':').map(Number);
             if (nowHour !== notifHour || nowMinute !== notifMinute) continue;
+            
+            const key = `${todayStr}_${targetPeriod}`;
+            if (sentNotifications.has(key)) continue;
 
             const deadline = new Date(deadlineStr);
             deadline.setHours(0, 0, 0, 0);
 
-            // 今日が期限当日かどうか
+            const today = new Date(jst);
+            today.setHours(0, 0, 0, 0);
+
             const isDeadlineToday = deadline.getTime() === today.getTime();
 
             // 〇日前まで判定
-            let shouldNotify = false;
-            for (let diff = 1; diff <= notifDays; diff++) {
-                // 期限チェック
-                const checkDate = new Date(deadline);
-                checkDate.setDate(checkDate.getDate() - diff);
-                if (checkDate.getTime() === today.getTime()) {
-                    shouldNotify = true;
-                    break;
+            let shouldNotify = isDeadlineToday;
+            if (!shouldNotify) {
+                for (let d = 1; d <= parseInt(notifDaysStr, 10); d++) {
+                    const checkDate = new Date(deadline);
+                    checkDate.setDate(checkDate.getDate() - d);
+                    if (checkDate.getTime() === today.getTime()) {
+                        shouldNotify = true;
+                        break;
+                    }
                 }
             }
-            // 期限でなければスキップ
-            if (!shouldNotify && !isDeadlineToday) continue;
+            if (!shouldNotify) continue;
+
 
             // 各データを取得
             const allEmployees = await fetchAllEmployees();
@@ -139,6 +141,9 @@ const job = new CronJob(
 
                 await sendSlackNotification(message);
             }
+
+            // この日付・評価期には通知済みとして記録
+            sentNotifications.add(key);
         }
     },
     null,

@@ -9,7 +9,6 @@ const exportToSheetAdminView = require('./exportToSheets/adminView');
 
 const createFolder = require('./exportToSheets/createFolder');
 
-
 // envファイル読み込み
 dotenv.config();
 const app = express();
