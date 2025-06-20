@@ -45,7 +45,7 @@ const exportToSheetGeneral = async (evaluationPeriod, { multiRecords, selfRecord
         const copyResponse = await drive.files.copy({
             fileId: GENERAL_TEMPLATE_FILE_ID,
             requestBody: {
-                name: `多面評価閲覧_${name}`,
+                name: `${name}`,
                 parents: [generalFolderId]
             }
         });
