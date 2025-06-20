@@ -99,7 +99,7 @@ const job = new CronJob(
                 const mentionSelf = await generateMentions(missingSelf);
                 const mentionMulti = await generateMentions(missingMulti);
 
-                const baseKey = `${todayStr}_${targetPeriod}`;
+                const baseKey = `${todayStr}_${nowHour}:${nowMinute}_${targetPeriod}`;
                 const selfKey = `${baseKey}_self`;
                 const multiKey = `${baseKey}_multi`;
 
