@@ -10,9 +10,6 @@ const {
 // 通知済みセット
 const sentNotifications = new Set();
 
-// 通知識別キーを評価期 + 日付 + 種別にする
-const baseKey = `${todayStr}_${targetPeriod}`;
-
 // 通知
 const job = new CronJob(
     '0 * * * * *',
@@ -24,6 +21,9 @@ const job = new CronJob(
         const nowMinute = jst.getMinutes();
 
         const todayStr = jst.toISOString().split('T')[0];
+        
+        // 通知識別キーを評価期 + 日付 + 種別にする
+        const baseKey = `${todayStr}_${targetPeriod}`;
 
         // 評価期データを取得
         const periods = await fetchEvaluationPeriods();
