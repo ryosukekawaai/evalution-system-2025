@@ -134,18 +134,11 @@ const job = new CronJob(
                     sentNotifications.add(multiKey);
                     console.log('✅ 多面評価 通知送信：', multiKey);
                 }
-
-                console.log('🔍 通知判定：', {
-                    evaluation_period: targetPeriod,
-                    deadline: deadlineStr,
-                    notifTime,
-                    notifDaysStr,
-                });
             }
         } catch (err) {
             console.error('通知処理中にエラーが発生しました:', err);
         } finally {
-            isProcessing = false; // ★ 忘れずに解除
+            isProcessing = false;
         }
     },
     null,
