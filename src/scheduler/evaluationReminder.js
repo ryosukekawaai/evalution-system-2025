@@ -21,9 +21,6 @@ const job = new CronJob(
         const nowMinute = jst.getMinutes();
 
         const todayStr = jst.toISOString().split('T')[0];
-        
-        // 通知識別キーを評価期 + 日付 + 種別にする
-        const baseKey = `${todayStr}_${targetPeriod}`;
 
         // 評価期データを取得
         const periods = await fetchEvaluationPeriods();
@@ -116,6 +113,9 @@ const job = new CronJob(
 
             const mentionSelf = await generateMentions(missingSelf);
             const mentionMulti = await generateMentions(missingMulti);
+
+            // 通知識別キーを評価期 + 日付 + 種別にする
+        const baseKey = `${todayStr}_${targetPeriod}`;
 
             // 未提出者がいたらリマインドを実行
             // 自己評価の通知
