@@ -10,6 +10,9 @@ const {
 // 通知済みセット
 const sentNotifications = new Set();
 
+// 通知識別キーを評価期 + 日付 + 種別にする
+const baseKey = `${todayStr}_${targetPeriod}`;
+
 // 通知
 const job = new CronJob(
     '0 * * * * *',
@@ -114,9 +117,6 @@ const job = new CronJob(
             const mentionSelf = await generateMentions(missingSelf);
             const mentionMulti = await generateMentions(missingMulti);
 
-            // 通知識別キーを評価期 + 日付 + 種別にする
-            const baseKey = `${todayStr}_${targetPeriod}`;
-
             // 未提出者がいたらリマインドを実行
             // 自己評価の通知
             const selfKey = `${baseKey}_self`;
@@ -149,8 +149,11 @@ const job = new CronJob(
                 ].join('\n');
 
                 await sendSlackNotification(message);
-                sentNotifications.add(multiKey);
             }
+
+            // この日付・評価期には通知済みとして記録
+            sentNotifications.add(key);
+            sentNotifications.add(multiKey);
         }
     },
     null,
