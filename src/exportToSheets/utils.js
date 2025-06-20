@@ -1,8 +1,29 @@
 const { google } = require('googleapis');
-const { readFileSync } = require('fs');
+const { readFileSync, writeFileSync, existsSync, mkdirSync } = require('fs');
 const axios = require('axios');
 const path = require('path');
 require('dotenv').config();
+
+// Render上でJSONを.envから復元
+const ensureCredentialsFile = () => {
+    const credDir = path.resolve('credentials');
+    const credPath = path.join(credDir, 'sheets-service-account.json');
+
+    if (!existsSync(credDir)) {
+        mkdirSync(credDir);
+    }
+
+    if (!existsSync(credPath)) {
+        const base64 = process.env.SHEETS_SERVICE_ACCOUNT_JSON_BASE64;
+        if (!base64) {
+            throw new Error('SHEETS_SERVICE_ACCOUNT_JSON_BASE64 が未設定です');
+        }
+        const jsonStr = Buffer.from(base64, 'base64').toString('utf-8');
+        writeFileSync(credPath, jsonStr, 'utf-8');
+        console.log('✅ credentials/sheets-service-account.json を生成しました');
+    }
+};
+ensureCredentialsFile();
 
 const auth = new google.auth.GoogleAuth({
     credentials: JSON.parse(readFileSync(path.resolve('credentials/sheets-service-account.json'), 'utf-8')),
