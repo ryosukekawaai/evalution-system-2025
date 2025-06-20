@@ -28,7 +28,7 @@ const job = new CronJob(
         for (const p of periods) {
             const notifTime = p.notification_time?.value;
             const deadlineStr = p.input_period?.value;
-            const targetPeriod = p.evaluation_period?.value;
+            const targetPeriod = p.evaluation_period?.value?.trim();
             const notifDaysStr = p.notification_days_before?.value;
             if (!notifTime || !deadlineStr || !targetPeriod || !notifDaysStr) continue;
 
@@ -144,6 +144,7 @@ const job = new CronJob(
 
             // この日付・評価期には通知済みとして記録
             sentNotifications.add(key);
+            console.log('本日の通知処理：', todayStr);
         }
     },
     null,
