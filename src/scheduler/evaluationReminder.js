@@ -7,24 +7,21 @@ const {
     fetchMultiEvaluations
 } = require('../services/kintoneService');
 
+// 通知済み記録セット
 const sentNotifications = new Set();
 
-// 通知
+// 通知ジョブ
 const job = new CronJob(
-    '0 * * * * *',
+    '0 * * * * *', // 毎分0秒に実行
     async () => {
         const now = new Date();
-        // JSTに変換
         const jst = new Date(now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
         const nowHour = jst.getHours();
         const nowMinute = jst.getMinutes();
-
         const todayStr = jst.toISOString().split('T')[0];
 
-        // 評価期データを取得
         const periods = await fetchEvaluationPeriods();
 
-        // 各評価期間をループ
         for (const p of periods) {
             const notifTime = p.notification_time?.value;
             const deadlineStr = p.input_period?.value;
@@ -34,9 +31,6 @@ const job = new CronJob(
 
             const [notifHour, notifMinute] = notifTime.split(':').map(Number);
             if (nowHour !== notifHour || nowMinute !== notifMinute) continue;
-            
-            const key = `${todayStr}_${targetPeriod}`;
-            if (sentNotifications.has(key)) continue;
 
             const deadline = new Date(deadlineStr);
             deadline.setHours(0, 0, 0, 0);
@@ -46,7 +40,6 @@ const job = new CronJob(
 
             const isDeadlineToday = deadline.getTime() === today.getTime();
 
-            // 〇日前まで判定
             let shouldNotify = isDeadlineToday;
             if (!shouldNotify) {
                 for (let d = 1; d <= parseInt(notifDaysStr, 10); d++) {
@@ -60,40 +53,32 @@ const job = new CronJob(
             }
             if (!shouldNotify) continue;
 
-
-            // 各データを取得
             const allEmployees = await fetchAllEmployees();
             const selfEvaluations = await fetchSelfEvaluations();
             const multiEvaluations = await fetchMultiEvaluations();
 
-            // 前後の空白を削除
             const normalize = (s) => s?.trim();
 
-            // 自己評価提出済み
             const submittedSelf = selfEvaluations
                 .filter(r => r.evaluation_period?.value === targetPeriod)
                 .map(r => normalize(r.name?.value))
                 .filter(Boolean);
 
-            // 多面評価提出済み
             const submittedMulti = multiEvaluations
                 .filter(r => r.evaluation_period?.value === targetPeriod)
                 .map(r => normalize(r.creator_user?.value?.[0]?.name))
                 .filter(Boolean);
 
-            // 自己評価未提出者
             const missingSelf = allEmployees.filter((emp) => {
                 const displayName = normalize(emp.user?.value?.[0]?.name);
                 return displayName && !submittedSelf.includes(displayName);
             });
 
-            // 多面評価未提出者
             const missingMulti = allEmployees.filter((emp) => {
                 const displayName = normalize(emp.user?.value?.[0]?.name);
                 return displayName && !submittedMulti.includes(displayName);
             });
 
-            // メンションリストを取得（Slack IDを使用）
             const generateMentions = async (list) => {
                 const mentions = await Promise.all(list.map(async (m) => {
                     const email = m.user?.value?.[0]?.code;
@@ -106,15 +91,19 @@ const job = new CronJob(
                         return name;
                     }
                 }));
-                // 重複排除
                 return [...new Set(mentions)];
             };
 
             const mentionSelf = await generateMentions(missingSelf);
             const mentionMulti = await generateMentions(missingMulti);
 
-            // 未提出者がいたらリマインドを実行
-            if (mentionSelf.length > 0) {
+            // 個別通知キー（評価期＋日付＋種別）
+            const baseKey = `${todayStr}_${targetPeriod}`;
+            const selfKey = `${baseKey}_self`;
+            const multiKey = `${baseKey}_multi`;
+
+            // 自己評価通知
+            if (!sentNotifications.has(selfKey) && mentionSelf.length > 0) {
                 const title = isDeadlineToday
                     ? `📢 【最終リマインド】本日が自己評価の入力期限です！`
                     : `📢 【リマインド】評価期「${targetPeriod}」の自己評価入力期限が近づいています（締切：${deadlineStr}）`;
@@ -126,9 +115,12 @@ const job = new CronJob(
                 ].join('\n');
 
                 await sendSlackNotification(message);
+                sentNotifications.add(selfKey);
+                console.log('✅ 自己評価 通知送信：', selfKey);
             }
 
-            if (mentionMulti.length > 0) {
+            // 多面評価通知
+            if (!sentNotifications.has(multiKey) && mentionMulti.length > 0) {
                 const title = isDeadlineToday
                     ? `📢 【最終リマインド】本日が多面評価の入力期限です！`
                     : `📢 【リマインド】評価期「${targetPeriod}」の多面評価入力期限が近づいています（締切：${deadlineStr}）`;
@@ -140,11 +132,9 @@ const job = new CronJob(
                 ].join('\n');
 
                 await sendSlackNotification(message);
+                sentNotifications.add(multiKey);
+                console.log('✅ 多面評価 通知送信：', multiKey);
             }
-
-            // この日付・評価期には通知済みとして記録
-            sentNotifications.add(key);
-            console.log('本日の通知処理：', todayStr);
         }
     },
     null,
