@@ -7,7 +7,11 @@ const {
     fetchMultiEvaluations
 } = require('../services/kintoneService');
 
+// 通知済みセット
 const sentNotifications = new Set();
+
+// 通知識別キーを評価期 + 日付 + 種別にする
+const baseKey = `${todayStr}_${targetPeriod}`;
 
 // 通知
 const job = new CronJob(
@@ -34,7 +38,7 @@ const job = new CronJob(
 
             const [notifHour, notifMinute] = notifTime.split(':').map(Number);
             if (nowHour !== notifHour || nowMinute !== notifMinute) continue;
-            
+
             const key = `${todayStr}_${targetPeriod}`;
             if (sentNotifications.has(key)) continue;
 
@@ -114,7 +118,9 @@ const job = new CronJob(
             const mentionMulti = await generateMentions(missingMulti);
 
             // 未提出者がいたらリマインドを実行
-            if (mentionSelf.length > 0) {
+            // 自己評価の通知
+            const selfKey = `${baseKey}_self`;
+            if (!sentNotifications.has(selfKey) && mentionSelf.length > 0) {
                 const title = isDeadlineToday
                     ? `📢 【最終リマインド】本日が自己評価の入力期限です！`
                     : `📢 【リマインド】評価期「${targetPeriod}」の自己評価入力期限が近づいています（締切：${deadlineStr}）`;
@@ -126,9 +132,12 @@ const job = new CronJob(
                 ].join('\n');
 
                 await sendSlackNotification(message);
+                sentNotifications.add(selfKey);
             }
 
-            if (mentionMulti.length > 0) {
+            // 多面評価の通知
+            const multiKey = `${baseKey}_multi`;
+            if (!sentNotifications.has(multiKey) && mentionMulti.length > 0) {
                 const title = isDeadlineToday
                     ? `📢 【最終リマインド】本日が多面評価の入力期限です！`
                     : `📢 【リマインド】評価期「${targetPeriod}」の多面評価入力期限が近づいています（締切：${deadlineStr}）`;
@@ -140,11 +149,8 @@ const job = new CronJob(
                 ].join('\n');
 
                 await sendSlackNotification(message);
+                sentNotifications.add(multiKey);
             }
-
-            // この日付・評価期には通知済みとして記録
-            sentNotifications.add(key);
-            console.log('本日の通知処理：', todayStr);
         }
     },
     null,
