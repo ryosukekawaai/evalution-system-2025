@@ -57,7 +57,10 @@ app.post('/api/exportToSheet', async (req, res) => {
         await exportToSheetAdminInput(evaluationPeriod, allData, periodFolderId);
         await exportToSheetAdminView(evaluationPeriod, allData, periodFolderId);
 
-        res.status(200).json({ message: '全社員分の出力に成功しました！' });
+        res.status(200).json({
+            message: '全社員分の出力に成功しました！',
+            folderUrl: `https://drive.google.com/drive/folders/${periodFolderId}`
+        });
     } catch (error) {
         console.error('出力エラー:', error);
         res.status(500).json({ error: 'スプレッドシート出力に失敗しました。' });
