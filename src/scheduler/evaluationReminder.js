@@ -8,12 +8,13 @@ const {
 } = require('../services/kintoneService');
 
 const sentNotifications = new Set();
-let isProcessing = false; // ★ 処理中フラグ
+// 実行中フラグ
+let isProcessing = false;
 
 const job = new CronJob(
-    '0 * * * * *', // 毎分0秒
+    '0 * * * * *',
     async () => {
-        if (isProcessing) return; // ★ すでに実行中ならスキップ
+        if (isProcessing) return;
         isProcessing = true;
 
         try {

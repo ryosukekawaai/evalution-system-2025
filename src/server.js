@@ -40,8 +40,14 @@ app.post('/api/exportToSheet', async (req, res) => {
     }
 
     try {
+        const now = new Date();
+        const jstNow = new Date(now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }));
+        const timestamp = jstNow.toISOString().replace(/T/, '_').replace(/:/g, '-').split('.')[0];
+
+        const folderName = `${evaluationPeriod}_${timestamp}`;
+
         // 「評価期間」フォルダの作成
-        const periodFolderId = await createFolder(evaluationPeriod, process.env.FOLDER_ID);
+        const periodFolderId = await createFolder(folderName, process.env.FOLDER_ID);
 
         // 各アプリから該当データ取得
         const allData = await fetchEmployeeRecords(evaluationPeriod);
