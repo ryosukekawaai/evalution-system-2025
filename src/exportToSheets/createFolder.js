@@ -6,7 +6,8 @@ const createFolder = async (name, parentId = null) => {
 
     const fileMetadata = {
         name,
-        mimeType: 'application/vnd.google-apps.spreadsheet'
+        mimeType: 'application/vnd.google-apps.folder',
+        ...(parentId && { parents: [parentId] })
     };
 
     const res = await drive.files.create({
