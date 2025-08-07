@@ -53,6 +53,16 @@ const exportToSheetGeneral = async (evaluationPeriod, { multiRecords, selfRecord
         // コピーしたシートのID
         const spreadsheetId = copyResponse.data.id;
 
+        await drive.permissions.create({
+            fileId: spreadsheetId,
+            requestBody: {
+                role: 'owner',
+                type: 'user',
+                emailAddress: 'ryosuke.kawaai@insight-inc.biz' // あなたのGoogleアカウント
+            },
+            transferOwnership: true
+        });
+
         // 自己評価の抽出
         const targetSelfRecord = selfRecords.find(r =>
             r.name?.value === name &&
