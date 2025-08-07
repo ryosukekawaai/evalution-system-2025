@@ -3,44 +3,20 @@ const { auth } = require('./utils');
 
 const drive = google.drive({ version: 'v3', auth });
 
-// フォルダの存在確認
-const folderExists = async (folderId) => {
-    try {
-        await drive.files.get({
-            fileId: folderId,
-            fields: 'id',
-        });
-        return true;
-    } catch (error) {
-        console.warn(`⚠️ 指定されたフォルダID(${folderId})は存在しないかアクセスできません`);
-        return false;
-    }
-};
 
-const createFolder = async (name, parentId = null) => {
-    let parents = [];
-
-    if (parentId) {
-        const exists = await folderExists(parentId);
-        if (exists) {
-            parents.push(parentId);
-        } else {
-            console.warn(`⛔ 親フォルダが存在しないため、親なしで ${name} を作成します`);
-        }
-    }
-
-    const fileMetadata = {
-        name,
-        mimeType: 'application/vnd.google-apps.folder',
-        ...(parents.length > 0 ? { parents } : {})
-    };
-
+async function createTestFile() {
+  try {
     const res = await drive.files.create({
-        resource: fileMetadata,
-        fields: 'id'
+      requestBody: {
+        name: 'テストスプレッドシート',
+        mimeType: 'application/vnd.google-apps.spreadsheet',
+        parents: ['1s9n_OJWtCt8taWsIrB7jD8I772G0OlmN'] // 一般フォルダID
+      },
+      fields: 'id, name'
     });
-
-    return res.data.id;
-};
-
-module.exports = createFolder;
+    console.log('✅ 作成成功:', res.data);
+  } catch (e) {
+    console.error('❌ 作成エラー:', e.response?.data?.error || e.message);
+  }
+}
+module.exports = createTestFile;
