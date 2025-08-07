@@ -63,6 +63,9 @@ const exportToSheetGeneral = async (evaluationPeriod, { multiRecords, selfRecord
             transferOwnership: true
         });
 
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         // 自己評価の抽出
         const targetSelfRecord = selfRecords.find(r =>
             r.name?.value === name &&
