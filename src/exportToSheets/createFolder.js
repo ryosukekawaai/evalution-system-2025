@@ -1,22 +1,20 @@
 const { google } = require('googleapis');
 const { auth } = require('./utils');
 
-const drive = google.drive({ version: 'v3', auth });
+const createFolder = async (name, parentId = null) => {
+    const drive = google.drive({ version: 'v3', auth });
 
+    const fileMetadata = {
+        name,
+        mimeType: 'application/vnd.google-apps.spreadsheet'
+    };
 
-async function createTestFile() {
-  try {
     const res = await drive.files.create({
-      requestBody: {
-        name: 'テストスプレッドシート',
-        mimeType: 'application/vnd.google-apps.spreadsheet',
-        parents: ['1s9n_OJWtCt8taWsIrB7jD8I772G0OlmN'] // 一般フォルダID
-      },
-      fields: 'id, name'
+        resource: fileMetadata,
+        fields: 'id'
     });
-    console.log('✅ 作成成功:', res.data);
-  } catch (e) {
-    console.error('❌ 作成エラー:', e.response?.data?.error || e.message);
-  }
-}
-module.exports = createTestFile;
+
+    return res.data.id;
+};
+
+module.exports = createFolder;
