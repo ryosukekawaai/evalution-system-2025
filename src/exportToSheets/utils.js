@@ -25,6 +25,12 @@ const ensureCredentialsFile = () => {
 };
 ensureCredentialsFile();
 
+const credentials = JSON.parse(
+  readFileSync(path.resolve('credentials/sheets-service-account.json'), 'utf-8')
+);
+
+console.log('✅ 現在使われているサービスアカウント:', credentials.client_email);
+
 const auth = new google.auth.GoogleAuth({
     credentials: JSON.parse(readFileSync(path.resolve('credentials/sheets-service-account.json'), 'utf-8')),
     scopes: [
